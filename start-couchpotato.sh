@@ -27,7 +27,7 @@ CreateGroup(){
 CreateUser(){
    if [ -z "$(getent passwd "${USER}" | cut -d: -f3)" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User ID available, creating user"
-      adduser -s /bin/bash -H -D -G "${GROUP}" -u "${UID}" "${USER}"
+      adduser -s /bin/ash -H -D -G "${GROUP}" -u "${UID}" "${USER}"
    elif [ ! "$(getent passwd "${USER}" | cut -d: -f3)" = "${UID}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User ID already in use - exiting"
       exit 1

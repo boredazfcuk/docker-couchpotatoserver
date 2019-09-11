@@ -2,7 +2,7 @@
 
 ##### Functions #####
 Initialise(){
-   echo "$(date '+%Y-%m-%d %H:%M:%S') | ***** Starting CouchPotato/CouchPotatoServer container *****"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Starting CouchPotato/CouchPotatoServer container *****"
 
    if [ -z "${USER}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: User name not set, defaulting to 'user'"; USER="user"; fi
    if [ -z "${UID}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: User ID not set, defaulting to '1000'"; UID="1000"; fi
@@ -27,7 +27,7 @@ CreateGroup(){
 CreateUser(){
    if [ -z "$(getent passwd "${USER}" | cut -d: -f3)" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User ID available, creating user"
-      adduser -H -S -D -G "${GROUP}" -u "${UID}" "${USER}"
+      adduser -s /bin/bash -H -D -G "${GROUP}" -u "${UID}" "${USER}"
    elif [ ! "$(getent passwd "${USER}" | cut -d: -f3)" = "${UID}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User ID already in use - exiting"
       exit 1
@@ -41,6 +41,7 @@ SetOwnerAndGroup(){
 }
 
 LaunchCouchPotato(){
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Starting CouchPotato as ${USER}"
    su -m "${USER}" -c '/bin/python '"${APPBASE}/CouchPotato.py"' --data_dir '"${CONFIGDIR}"' --console_log'
 }
 

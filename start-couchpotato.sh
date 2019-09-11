@@ -11,7 +11,7 @@ Initialise(){
 
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${USER}:${UID}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${GROUP}:${GID}"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato directory: ${APPBASE}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato application directory: ${APPBASE}"
 }
 
 CreateGroup(){
@@ -42,7 +42,7 @@ SetOwnerAndGroup(){
 
 LaunchCouchPotato(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Starting CouchPotato as ${USER}"
-   su -m "${USER}" -c '/bin/python '"${APPBASE}/CouchPotato.py"' --data_dir '"${CONFIGDIR}"' --console_log'
+   su -m "${USER}" -c 'python '"${APPBASE}/CouchPotato.py"' --data_dir '"${CONFIGDIR}"' --console_log'
 }
 
 ##### Script #####

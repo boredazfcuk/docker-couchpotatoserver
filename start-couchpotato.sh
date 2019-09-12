@@ -35,7 +35,7 @@ CreateUser(){
 }
 
 SetOwnerAndGroup(){
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Correct owner and group of syncronised files, if required"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Correct owner and group of application files, if required"
    find "${APPBASE}" ! -user "${USER}" -exec chown "${USER}" {} \;
    find "${APPBASE}" ! -group "${GROUP}" -exec chgrp "${GROUP}" {} \;
 }

@@ -22,6 +22,7 @@ HEALTHCHECK --start-period=10s --interval=1m --timeout=10s \
   CMD wget --quiet --tries=1 --spider "http://${HOSTNAME}:5050/couchpotato" || exit 1
 
 VOLUME "${CONFIGDIR}"
+
 WORKDIR "${APPBASE}"
 
 CMD /usr/local/bin/start-couchpotato.sh

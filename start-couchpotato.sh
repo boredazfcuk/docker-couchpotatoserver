@@ -51,4 +51,5 @@ LaunchCouchPotato(){
 Initialise
 CreateGroup
 CreateUser
+SetOwnerAndGroup
 LaunchCouchPotato

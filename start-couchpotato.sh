@@ -37,11 +37,21 @@ CreateUser(){
 }
 
 SetOwnerAndGroup(){
+   RENAMERFROM="$(sed -nr '/\[renamer\]/,/\[/{/^from =/p}' "${CONFIGDIR}/settings.conf" | awk '{print $3}')"
+   BLACKHOLEDIRECTORY="$(sed -nr '/\[blackhole\]/,/\[/{/^directory =/p}' "${CONFIGDIR}/settings.conf" | awk '{print $3}')"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Correct owner and group of application files, if required"
    find "${CONFIGDIR}" ! -user "${USER}" -exec chown "${USER}" {} \;
    find "${CONFIGDIR}" ! -group "${GROUP}" -exec chgrp "${GROUP}" {} \;
    find "${APPBASE}" ! -user "${USER}" -exec chown "${USER}" {} \;
    find "${APPBASE}" ! -group "${GROUP}" -exec chgrp "${GROUP}" {} \;
+   if [ ! -z "${RENAMERFROM}" ]; then
+      find "${RENAMERFROM}" ! -user "${USER}" -exec chown "${USER}" {} \;
+      find "${RENAMERFROM}" ! -group "${GROUP}" -exec chgrp "${GROUP}" {} \;
+   fi
+   if [ ! -z "${BLACKHOLEDIRECTORY}" ]; then
+      find "${BLACKHOLEDIRECTORY}" ! -user "${USER}" -exec chown "${USER}" {} \;
+      find "${BLACKHOLEDIRECTORY}" ! -group "${GROUP}" -exec chgrp "${GROUP}" {} \;
+   fi
 }
 
 LaunchCouchPotato(){

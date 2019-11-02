@@ -14,6 +14,23 @@ Initialise(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Listening IP Address: ${LANIP}"
    COUCHPOTATOHOST="$(sed -nr '/\[core\]/,/\[/{/^host =/p}' "${CONFIGDIR}/settings.conf")"
    sed -i "s%^${COUCHPOTATOHOST}$%host = ${LANIP}%" "${CONFIGDIR}/settings.conf"
+
+   if [ ! -f "${CONFIGDIR}/https" ]; then mkdir -p "${CONFIGDIR}/https"; fi
+   if [ ! -f "${CONFIGDIR}/https/couchpotato.crt" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate private key for encrypting communications"
+      openssl ecparam -genkey -name secp384r1 -out "${CONFIGDIR}/https/couchpotato.key"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Create certificate request"
+      openssl req -new -subj "/C=NA/ST=Global/L=Global/O=CouchPotato/OU=CouchPotato/CN=CouchPotato/" -key "${CONFIGDIR}/https/couchpotato.key" -out "${CONFIGDIR}/https/couchpotato.csr"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate self-signed certificate request"
+      openssl x509 -req -sha256 -days 3650 -in "${CONFIGDIR}/https/couchpotato.csr" -signkey "${CONFIGDIR}/https/couchpotato.key" -out "${CONFIGDIR}/https/couchpotato.crt"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure CouchPotato to use ${CONFIGDIR}/https/couchpotato.key key file"
+      COUCHPOTATOKEY="$(sed -nr '/\[core\]/,/\[/{/^ssl_key =/p}' "${CONFIGDIR}/settings.conf")"
+      sed -i "s%^${COUCHPOTATOKEY}$%ssl_key = ${CONFIGDIR}/https/couchpotato.key%" "${CONFIGDIR}/settings.conf"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure CouchPotato to use ${CONFIGDIR}/https/couchpotato.crt certificate file"
+      COUCHPOTATOCERT="$(sed -nr '/\[core\]/,/\[/{/^ssl_cert =/p}' "${CONFIGDIR}/settings.conf")"
+      sed -i "s%^${COUCHPOTATOKEY}$%ssl_cert = ${CONFIGDIR}/https/couchpotato.crt%" "${CONFIGDIR}/settings.conf"
+   fi
+
 }
 
 CreateGroup(){

@@ -3,7 +3,7 @@ MAINTAINER boredazfcuk
 ENV APPBASE="/CouchPotatoServer" \
    REPO="CouchPotato/CouchPotatoServer" \
    CONFIGDIR="/config" \
-   APPDEPENDENCIES="git python py2-lxml py-openssl libxslt-dev tzdata unrar py2-pip"
+   APPDEPENDENCIES="git python py2-lxml openssl py-openssl libxslt-dev tzdata unrar py2-pip"
 
 COPY start-couchpotato.sh /usr/local/bin/start-couchpotato.sh
 

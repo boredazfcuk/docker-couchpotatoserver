@@ -29,6 +29,8 @@ Initialise(){
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure CouchPotato to use ${CONFIGDIR}/https/couchpotato.crt certificate file"
       COUCHPOTATOCERT="$(sed -nr '/\[core\]/,/\[/{/^ssl_cert =/p}' "${CONFIGDIR}/settings.conf")"
       sed -i "s%^${COUCHPOTATOKEY}$%ssl_cert = ${CONFIGDIR}/https/couchpotato.crt%" "${CONFIGDIR}/settings.conf"
+      COUCHPOTATOHTTPS="$(sed -nr '/\[core\]/,/\[/{/^ssl_cert =/p}' "${CONFIGDIR}/settings.conf")"
+      sed -i "s%^${COUCHPOTATOKEY}$%ssl_cert = ${CONFIGDIR}/https/couchpotato.crt%" "${CONFIGDIR}/settings.conf"
    fi
 
 }

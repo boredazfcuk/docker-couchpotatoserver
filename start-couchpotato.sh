@@ -110,7 +110,7 @@ Configure(){
       -e "/^\[renamer\]/,/^\[.*\]/ s%from =.*%from = ${MOVIECOMPLETEDIR}%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%to =.*%to = ${VIDEODIRS//,*/}%" \
       "${CONFIGDIR}/couchpotato.ini"
-   if [ ! -z "${COUCHPOTATO}" ]; then
+   if [ ! -z "${COUCHPOTATOENABLED}" ]; then
       sed -i "s%^url_base = $%url_base = /couchpotato%" "${CONFIGDIR}/couchpotato.ini"
    fi
    if [ ! -z "${KODIHEADLESS}" ]; then
@@ -122,7 +122,7 @@ Configure(){
          -e "/^\[xbmc\]/,/^\[.*\]/ s%remote_dir_scan =.*%remote_dir_scan = 1%" \
          "${CONFIGDIR}/couchpotato.ini"
    fi
-   if [ ! -z "${SABNZBD}" ]; then
+   if [ ! -z "${SABNZBDENABLED}" ]; then
       sed -i \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%category =.*%category = movie%" \
@@ -131,7 +131,7 @@ Configure(){
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%api_key =.*%api_key = ${GLOBALAPIKEY}%" \
          "${CONFIGDIR}/couchpotato.ini"
    fi
-   if [ ! -z "${DELUGE}" ]; then
+   if [ ! -z "${DELUGEENABLED}" ]; then
       sed -i \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%magnet_file =.*%magnet_file = 1%" \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \

@@ -70,6 +70,8 @@ FirstRun(){
       -e "/^\[renamer\]/,/^\[.*\]/ s%^cleanup =.*%cleanup = True%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^check_space =.*%check_space = True%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^file_action =.*%file_action = symlink_reversed%" \
+      -e '/^\[renamer\]/,/^\[.*\]/ s%^folder_name =.*%folder_name = <thename> (<year>)' \
+      -e '/^\[renamer\]/,/^\[.*\]/ s%^file_name =.*%file_name = <thename><cd>.<ext>' \
       -e "/^\[newznab\]/,/^\[.*\]/ s%^enabled =.*$%enabled = 0%" \
       -e "/^\[searcher\]/,/^\[.*\]/ s%^preferred_method =.*%preferred_method = nzb%" \
       -e "/^\[suggestion\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
@@ -135,7 +137,7 @@ Configure(){
       sed -i \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%magnet_file =.*%magnet_file = 1%" \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%directory =.*%directory = ${DELUGEWATCHDIR}movies/%" \
+         -e "/^\[blackhole\]/,/^\[.*\]/ s%directory =.*%directory = ${DELUGEWATCHDIR}movie/%" \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%create_subdir =.*%create_subdir = 0%" \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%use_for =.*%use_for = torrent%" \
          "${CONFIGDIR}/couchpotato.ini"

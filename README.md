@@ -19,7 +19,7 @@ The stack's docker-compose.yaml is available as boredazfcuk/steve
 
 USER: This is name of the user account that you wish to create within the container. This can be anything you choose, but ideally you would set this to match the name of the user on the host system which has access to your storage. If this variable is not set, it will default to 'user'
 
-UID: This is the User ID number of the above user account. This can be any number that isn't already in use. Ideally, you should set this to be the same ID number as the USER's ID on the host system. This will avoid permissions issues on the host system. If this variable is not set, it will default to '1000'
+user_id: This is the User ID number of the above user account. This can be any number that isn't already in use. Ideally, you should set this to be the same ID number as the USER's ID on the host system. This will avoid permissions issues on the host system. If this variable is not set, it will default to '1000'
 
 GROUP: This is name of the group account that you wish to create within the container. This can be anything you choose, but ideally you would set this to match the name of the user's primary group on the host system. If this variable is not set, it will default to 'group'
 
@@ -41,7 +41,7 @@ docker create \
    --network <Name of Docker network, or container network to connect to> \
    --restart=always \
    --env USER=<User Name> \
-   --env UID=<User ID> \
+   --env user_id=<User ID> \
    --env GROUP=<Group Name> \
    --env GID=<Group ID> \
    --env TZ=<The local time zone> \
@@ -58,7 +58,7 @@ docker create \
    --network container:MyVPNContainer \
    --restart always \
    --env USER=media \
-   --env UID=3311 \
+   --env user_id=3311 \
    --env GROUP=couchpotato \
    --env GID=3342 \
    --env TZ=Europe/London \

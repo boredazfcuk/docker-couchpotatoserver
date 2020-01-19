@@ -113,10 +113,10 @@ Configure(){
       -e "/^\[renamer\]/,/^\[.*\]/ s%from =.*%from = ${movie_complete_dir}%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%to =.*%to = ${video_dirs//,*/}%" \
       "${config_dir}/couchpotato.ini"
-   if [ ! -z "${couchpotato_enabled}" ]; then
+   if [ "${couchpotato_enabled}" ]; then
       sed -i "s%^url_base = $%url_base = /couchpotato%" "${config_dir}/couchpotato.ini"
    fi
-   if [ ! -z "${kodi_headless_group_id}" ]; then
+   if [ "${kodi_headless_group_id}" ]; then
       sed -i \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%username =.*%username = kodi%" \
@@ -125,7 +125,7 @@ Configure(){
          -e "/^\[xbmc\]/,/^\[.*\]/ s%remote_dir_scan =.*%remote_dir_scan = 1%" \
          "${config_dir}/couchpotato.ini"
    fi
-   if [ ! -z "${sabnzbd_enabled}" ]; then
+   if [ "${sabnzbd_enabled}" ]; then
       sed -i \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%category =.*%category = movie%" \
@@ -134,7 +134,7 @@ Configure(){
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%api_key =.*%api_key = ${global_api_key}%" \
          "${config_dir}/couchpotato.ini"
    fi
-   if [ ! -z "${deluge_enabled}" ]; then
+   if [ "${deluge_enabled}" ]; then
       sed -i \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%magnet_file =.*%magnet_file = 1%" \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
@@ -147,7 +147,7 @@ Configure(){
          -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
-   if [ ! -z "${prowl_api_key}" ]; then
+   if [ "${prowl_api_key}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configuring Prowl notifications"
       sed -i \
          -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
@@ -159,7 +159,7 @@ Configure(){
          -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = 0%" \
          "${config_dir}/couchpotato.ini"
    fi
-   if [ ! -z "${omgwtfnzbs_user}" ]; then
+   if [ "${omgwtfnzbs_user}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configuring OMGWTFNZBs search provider"
       sed -i \
          -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
@@ -181,11 +181,11 @@ SetOwnerAndGroup(){
    find "${config_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
    find "${app_base_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
    find "${app_base_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
-   if [ ! -z "${renamer_source_dir}" ]; then
+   if [ "${renamer_source_dir}" ]; then
       find "${renamer_source_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
       find "${renamer_source_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
    fi
-   if [ ! -z "${black_hole_dir}" ]; then
+   if [ "${black_hole_dir}" ]; then
       find "${black_hole_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
       find "${black_hole_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
    fi

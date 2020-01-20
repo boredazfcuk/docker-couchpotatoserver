@@ -1,7 +1,7 @@
-FROM alpine:latest
+FROM alpine:3.10
 MAINTAINER boredazfcuk
 ARG app_repo="CouchPotato/CouchPotatoServer"
-ARG app_dependencies="git python py2-lxml openssl py-openssl libxslt-dev tzdata unrar py2-pip"
+ARG app_dependencies="git python2 openssl py-openssl libxslt-dev tzdata unrar py2-pip"
 ENV app_base_dir="/CouchPotatoServer" \
    config_dir="/config"
 

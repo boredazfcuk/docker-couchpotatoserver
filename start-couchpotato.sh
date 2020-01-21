@@ -5,19 +5,14 @@ Initialise(){
    lan_ip="$(hostname -i)"
    echo -e "\n"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Starting CouchPotato/CouchPotatoServer container *****"
-   if [ -z "${stack_user}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: User name not set, defaulting to 'stackman'"; stack_user="stackman"; fi
-   if [ -z "${stack_password}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: Password not set, defaulting to 'Skibidibbydibyodadubdub'"; stack_password="Skibidibbydibyodadubdub"; fi
-   if [ -z "${user_id}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: User ID not set, defaulting to '1000'"; user_id="1000"; fi
-   if [ -z "${group}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: Group name not set, defaulting to 'group'"; group="group"; fi
-   if [ -z "${group_id}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: Group ID not set, defaulting to '1000'"; group_id="1000"; fi
-   if [ -z "${video_dirs}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: Video paths not set, defaulting to '/storage/videos/'"; video_dirs="/storage/videos/"; fi
-   if [ -z "${movie_complete_dir}" ]; then echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: Completed movie path not set, defaulting to '/storage/downloads/complete/movie/'"; movie_complete_dir="/storage/downloads/complete/movie/"; fi
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${stack_user}:${user_id}"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${group}:${group_id}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${stack_user:=stackman}:${user_id:=1000}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${group:=group}:${group_id:=1000}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Password: ${stack_password:=Skibidibbydibyodadubdub}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato application directory: ${app_base_dir}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato configuration directory: ${config_dir}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Listening IP Address: ${lan_ip}"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Video paths: ${video_dirs}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Video location(s): ${video_dirs:=/storage/videos/}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Download directory: ${tv_complete_dir:=/storage/downloads/complete/movie/}"
 }
 
 CreateGroup(){
@@ -117,6 +112,7 @@ Configure(){
       sed -i "s%^url_base = $%url_base = /couchpotato%" "${config_dir}/couchpotato.ini"
    fi
    if [ "${kodi_headless_group_id}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Kodi-headless enabled"
       sed -i \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%username =.*%username = kodi%" \
@@ -126,6 +122,7 @@ Configure(){
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${sabnzbd_enabled}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Sabnzbd enabled"
       sed -i \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%category =.*%category = movie%" \
@@ -135,6 +132,7 @@ Configure(){
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${deluge_enabled}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Deluge enabled"
       sed -i \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%magnet_file =.*%magnet_file = 1%" \
          -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
@@ -147,8 +145,8 @@ Configure(){
          -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
-   if [ "${prowl_api_key}" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configuring Prowl notifications"
+   if [ "${prowl_api_key}" ] && [ "${couchpotato_notifications}" = "Prowl" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Prowl notifications enabled"
       sed -i \
          -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
          -e "/^\[prowl\]/,/^\[.*\]/ s%^api_key =.*%api_key = ${prowl_api_key}%" \
@@ -157,6 +155,18 @@ Configure(){
    else
       sed -i \
          -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = 0%" \
+         "${config_dir}/couchpotato.ini"
+   fi
+   if [ "${telegram_token}" ] && [ "${couchpotato_notifications}" = "Telegram" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Telegram notifications enabled"
+      sed -i \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^bot_token =.*%bot_token = ${telegram_token}%" \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^receiver_user_id =.*%receiver_user_id = ${chat_id}%" \
+         "${config_dir}/couchpotato.ini"
+   else
+      sed -i \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = 0%" \
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${omgwtfnzbs_user}" ]; then

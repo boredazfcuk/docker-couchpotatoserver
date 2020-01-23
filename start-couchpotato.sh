@@ -6,20 +6,32 @@ Initialise(){
    echo -e "\n"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Starting CouchPotato/CouchPotatoServer container *****"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${stack_user:=stackman}:${user_id:=1000}"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${group:=group}:${group_id:=1000}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${couchpotato_group:=couchpotato}:${couchpotato_group_id:=1000}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Password: ${stack_password:=Skibidibbydibyodadubdub}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato application directory: ${app_base_dir}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato configuration directory: ${config_dir}"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Listening IP Address: ${lan_ip}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    LAN IP Address: ${lan_ip}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Video location(s): ${video_dirs:=/storage/videos/}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Download directory: ${tv_complete_dir:=/storage/downloads/complete/movie/}"
+   if [ "${couchpotato_notifications}" ]; then
+      if [ "${couchpotato_notifications}" = "Prowl" ] && [ "${prowl_api_key}" ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure ${couchpotato_notifications} notifications"
+      elif  [ "${couchpotato_notifications}" = "Pushbullet" ] && [ "${pushbullet_api_key}" ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure ${couchpotato_notifications} notifications"
+      elif [ "${couchpotato_notifications}" = "Telegram" ] && [ "${telegram_token}" ] && [ "${telegram_chat_id}" ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure ${couchpotato_notifications} notifications"
+      else
+         echo "$(date '+%Y-%m-%d %H:%M:%S') WARINING ${couchpotato_notifications} notifications enabled, but configured incorrectly - disabling notifications"
+         unset couchpotato_notifications prowl_api_key pushbullet_api_key telegram_token telegram_chat_id
+      fi
+   fi
 }
 
 CreateGroup(){
-   if [ -z "$(getent group "${group}" | cut -d: -f3)" ]; then
+   if [ -z "$(getent group "${couchpotato_group}" | cut -d: -f3)" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Group ID available, creating group"
-      addgroup -g "${group_id}" "${group}"
-   elif [ ! "$(getent group "${group}" | cut -d: -f3)" = "${group_id}" ]; then
+      addgroup -g "${couchpotato_group_id}" "${couchpotato_group}"
+   elif [ ! "$(getent group "${couchpotato_group}" | cut -d: -f3)" = "${couchpotato_group_id}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   Group group_id mismatch - exiting"
       exit 1
    fi
@@ -28,7 +40,7 @@ CreateGroup(){
 CreateUser(){
    if [ -z "$(getent passwd "${stack_user}" | cut -d: -f3)" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User ID available, creating user"
-      adduser -s /bin/ash -H -D -G "${group}" -u "${user_id}" "${stack_user}"
+      adduser -s /bin/ash -H -D -G "${couchpotato_group}" -u "${user_id}" "${stack_user}"
    elif [ ! "$(getent passwd "${stack_user}" | cut -d: -f3)" = "${user_id}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User ID already in use - exiting"
       exit 1
@@ -38,7 +50,7 @@ CreateUser(){
 FirstRun(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    First run detected - create default config"
    find "${config_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-   find "${config_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
+   find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    su -m "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --daemon --pid_file /tmp/couchpotato.pid'
    sleep 15
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Reload CouchPotato/CouchPotatoServer *****"
@@ -77,11 +89,17 @@ FirstRun(){
 
 EnableSSL(){
    if [ ! -d "${config_dir}/https" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Enable HTTPS"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Initialise HTTPS"
       mkdir -p "${config_dir}/https"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate server key"
       openssl ecparam -genkey -name secp384r1 -out "${config_dir}/https/couchpotato.key"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate certificate request"
       openssl req -new -subj "/C=NA/ST=Global/L=Global/O=CouchPotato/OU=CouchPotato/CN=CouchPotato/" -key "${config_dir}/https/couchpotato.key" -out "${config_dir}/https/couchpotato.csr"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate certificate"
       openssl x509 -req -sha256 -days 3650 -in "${config_dir}/https/couchpotato.csr" -signkey "${config_dir}/https/couchpotato.key" -out "${config_dir}/https/couchpotato.crt" >/dev/null 2>&1
+   fi
+   if [ -f "${config_dir}/https/couchpotato.key" ] && [ -f "${config_dir}/https/couchpotato.crt" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure CouchPotato to use HTTPS"
       sed -i \
          -e "/^\[core\]/,/^\[.*\]/ s%ssl_key =.*%ssl_key = ${config_dir}/https/couchpotato.key%" \
          -e "/^\[core\]/,/^\[.*\]/ s%ssl_cert =.*%ssl_cert = ${config_dir}/https/couchpotato.crt%" \
@@ -162,7 +180,7 @@ Configure(){
       sed -i \
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^bot_token =.*%bot_token = ${telegram_token}%" \
-         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^receiver_user_id =.*%receiver_user_id = ${chat_id}%" \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^receiver_user_id =.*%receiver_user_id = ${telegram_chat_id=}%" \
          "${config_dir}/couchpotato.ini"
    else
       sed -i \
@@ -188,16 +206,16 @@ SetOwnerAndGroup(){
    black_hole_dir="$(sed -nr '/\[blackhole\]/,/\[/{/^directory =/p}' "${config_dir}/couchpotato.ini" | awk '{print $3}')"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Correct owner and group of application files, if required"
    find "${config_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-   find "${config_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
+   find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    find "${app_base_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-   find "${app_base_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
+   find "${app_base_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    if [ "${renamer_source_dir}" ]; then
       find "${renamer_source_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-      find "${renamer_source_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
+      find "${renamer_source_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    fi
    if [ "${black_hole_dir}" ]; then
       find "${black_hole_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-      find "${black_hole_dir}" ! -group "${group}" -exec chgrp "${group}" {} \;
+      find "${black_hole_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    fi
 }
 
@@ -211,7 +229,7 @@ Initialise
 CreateGroup
 CreateUser
 if [ ! -f "${config_dir}/couchpotato.ini" ]; then FirstRun; fi
-if [ ! -d "${config_dir}/https" ]; then EnableSSL; fi
+EnableSSL
 Configure
 SetOwnerAndGroup
 LaunchCouchPotato

@@ -1,6 +1,7 @@
-FROM alpine:3.10
+FROM alpine:latest
 MAINTAINER boredazfcuk
 ARG app_repo="CouchPotato/CouchPotatoServer"
+ARG build_dependencies="gcc python-dev musl-dev libffi-dev openssl-dev"
 ARG app_dependencies="git python2 openssl py-openssl libxslt-dev tzdata unrar py2-pip"
 ENV app_base_dir="/CouchPotatoServer" \
    config_dir="/config"
@@ -8,12 +9,16 @@ ENV app_base_dir="/CouchPotatoServer" \
 RUN echo "$(date '+%d/%m/%Y - %H:%M:%S') | ***** BUILD STARTED *****" && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Create application base directory" && \
    mkdir -p "${app_base_dir}" && \
+echo "$(date '+%d/%m/%Y - %H:%M:%S') | Install build dependencies" && \
+   apk add --no-cache --no-progress --virtual=build-deps ${build_dependencies} && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Install application dependencies" && \
    apk add --no-cache --no-progress ${app_dependencies} && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Install ${app_repo}" && \
    git clone -b master "https://github.com/${app_repo}.git" "${app_base_dir}" && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Install pip dependencies" && \
-   pip install --upgrade pip -r "${app_base_dir}/requirements-dev.txt"
+   pip install --upgrade pip -r "${app_base_dir}/requirements-dev.txt" && \
+echo "$(date '+%d/%m/%Y - %H:%M:%S') | Clean up" && \
+   apk del --purge build-deps
 
 COPY start-couchpotato.sh /usr/local/bin/start-couchpotato.sh
 COPY healthcheck.sh /usr/local/bin/healthcheck.sh

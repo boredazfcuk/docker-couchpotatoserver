@@ -66,23 +66,24 @@ FirstRun(){
       -e "/^\[core\]/,/^\[.*\]/ s%^data_dir =.*%data_dir = ${config_dir}%" \
       -e "/^\[core\]/,/^\[.*\]/ s%^username =.*%username = ${stack_user}%" \
       -e "/^\[core\]/,/^\[.*\]/ s%^password =.*%password = $(echo -n "${stack_password}" | md5sum | awk '{print $1}')%" \
-      -e "/^\[core\]/,/^\[.*\]/ s%^provider_order = omgwtfnzbs magnetdl%provider_order = omgwtfnzbs magnetdl%" \
       -e "/^\[manage\]/,/^\[.*\]/ s%^enabled = False%enabled = True%" \
       -e "/^\[manage\]/,/^\[.*\]/ s%^library_refresh_interval = 0%library_refresh_interval = 12%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^enabled =.*$%enabled = 1%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar =.*%unrar = 1%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar_path = $%unrar_path = /usr/bin/unrar%" \
+      -e "/^\[renamer\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
+      -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar =.*%unrar = True%" \
+      -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar_path =.*%unrar_path = /usr/bin/unrar%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^run_every =.*%run_every = 0%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^next_on_failed =.*%next_on_failed = True%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^cleanup =.*%cleanup = True%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^check_space =.*%check_space = True%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%^file_action =.*%file_action = symlink_reversed%" \
-      -e '/^\[renamer\]/,/^\[.*\]/ s%^folder_name =.*%folder_name = <thename> (<year>)' \
-      -e '/^\[renamer\]/,/^\[.*\]/ s%^file_name =.*%file_name = <thename><cd>.<ext>' \
-      -e "/^\[newznab\]/,/^\[.*\]/ s%^enabled =.*$%enabled = 0%" \
+      -e '/^\[renamer\]/,/^\[.*\]/ s%^folder_name =.*%folder_name = <thename> (<year>)%' \
+      -e '/^\[renamer\]/,/^\[.*\]/ s%^file_name =.*%file_name = <thename><cd>.<ext>%' \
+      -e "/^\[newznab\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
       -e "/^\[moviesearcher\]/,/^\[.*\]/ s%^cron_hour =.*%cron_hour = */2%" \
+      -e "/^\[moviesearcher\]/,/^\[.*\]/ s%^run_on_launch =.*%run_on_launch = True%" \
       -e "/^\[searcher\]/,/^\[.*\]/ s%^preferred_method =.*%preferred_method = nzb%" \
       -e "/^\[suggestion\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
+      -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
       "${config_dir}/couchpotato.ini"
    sleep 1
 }
@@ -116,12 +117,12 @@ Configure(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Set Video library paths: ${video_dirs}"
    sed -i \
       -e "s%^launch_browser = True$%launch_browser = False%" \
-      -e "s%^show_wizard = 1$%show_wizard = 0%" \
+      -e "s%^show_wizard =.*%show_wizard = False%" \
       -e "/^\[core\]/,/^\[.*\]/ s%api_key =.*%api_key = ${global_api_key}%" \
       -e "/^\[core\]/,/^\[.*\]/ s%^host =.*%host = ${lan_ip}%" \
       -e "/^\[updater\]/,/^\[.*\]/ s%notification =.*%notification = True%" \
       -e "/^\[updater\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
-      -e "/^\[updater\]/,/^\[.*\]/ s%automatic =.*%automatic = 0%" \
+      -e "/^\[updater\]/,/^\[.*\]/ s%automatic =.*%automatic = False%" \
       -e "/^\[manage\]/,/^\[.*\]/ s%library =.*%library = ${video_dirs//,/::}%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%from =.*%from = ${movie_complete_dir}%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%to =.*%to = ${video_dirs//,*/}%" \
@@ -132,19 +133,33 @@ Configure(){
    if [ "${kodi_headless_group_id}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Kodi-headless enabled"
       sed -i \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%username =.*%username = kodi%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%password =.*%password = ${kodi_password}%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%host =.*%host = kodi:8080%" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s%remote_dir_scan =.*%remote_dir_scan = 1%" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s%remote_dir_scan =.*%remote_dir_scan = True%" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_disc_art =.*/meta_disc_art = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_disc_art_name =.*/meta_disc_art_name = %s-disc.png/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_thumbnail =.*/meta_thumbnail = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_thumbnail_name =.*/meta_thumbnail_name = %s-thumb.jpg/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_fanart =.*/meta_fanart = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_fanart_name =.*/meta_fanart_name = %s-fanart.jpg/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_logo =.*/meta_logo = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_logo_name =.*/meta_logo_name = %s-logo.jpg/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_clear_art =.*/meta_clear_art = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_clear_art_name =.*/meta_clear_art_name = %s-clearart.png/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_landscape =.*/meta_landscape = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_landscape_name =.*/meta_landscape_name = %s-landscape.jpg/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_banner =.*/meta_banner = True/" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_banner_name =.*/meta_banner_name = %s-banner.jpg/" \
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${sabnzbd_enabled}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Sabnzbd enabled"
       sed -i \
-         -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
+         -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%category =.*%category = movie%" \
-         -e "/^\[sabnzbd\]/,/^\[.*\]/ s%ssl =.*%ssl = 1%" \
+         -e "/^\[sabnzbd\]/,/^\[.*\]/ s%ssl =.*%ssl = True%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%host =.*%host = sabnzbd:9090%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%api_key =.*%api_key = ${global_api_key}%" \
          "${config_dir}/couchpotato.ini"
@@ -152,58 +167,58 @@ Configure(){
    if [ "${deluge_enabled}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Deluge enabled"
       sed -i \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%magnet_file =.*%magnet_file = 1%" \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%directory =.*%directory = ${deluge_watch_dir}movie/%" \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%create_subdir =.*%create_subdir = 0%" \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%use_for =.*%use_for = torrent%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%username =.*%username = ${stack_user}%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%label =.*%label = movie%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%host =.*%host = localhost:58846%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%password =.*%password = ${stack_password}%" \
+         -e "/^\[magnetdl\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          "${config_dir}/couchpotato.ini"
    else
       sed -i \
-         -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${prowl_api_key}" ] && [ "${couchpotato_notifications}" = "Prowl" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Prowl notifications enabled"
       sed -i \
-         -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
+         -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
          -e "/^\[prowl\]/,/^\[.*\]/ s%^api_key =.*%api_key = ${prowl_api_key}%" \
-         -e "/^\[prowl\]/,/^\[.*\]/ s%^on_snatch =.*%on_snatch = 1%" \
+         -e "/^\[prowl\]/,/^\[.*\]/ s%^on_snatch =.*%on_snatch = True%" \
          "${config_dir}/couchpotato.ini"
    else
       sed -i \
-         -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = 0%" \
+         -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${telegram_token}" ] && [ "${couchpotato_notifications}" = "Telegram" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Telegram notifications enabled"
       sed -i \
-         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^bot_token =.*%bot_token = ${telegram_token}%" \
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^receiver_user_id =.*%receiver_user_id = ${telegram_chat_id=}%" \
          "${config_dir}/couchpotato.ini"
    else
       sed -i \
-         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = 0%" \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
    if [ "${omgwtfnzbs_user}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configuring OMGWTFNZBs search provider"
       sed -i \
-         -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^enabled =.*%enabled = 1%" \
+         -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
          -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^username =.*%username = ${omgwtfnzbs_user}%" \
          -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^api_key =.*%api_key = ${omgwtfnzbs_api_key}%" \
          "${config_dir}/couchpotato.ini"
    else
       sed -i \
-         -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^enabled =.*%enabled = 0%" \
+         -e "/^\[omgwtfnzbs\]/,/^\[.*\]/ s%^enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
 }
 
 SetOwnerAndGroup(){
    renamer_source_dir="$(sed -nr '/\[ \]/,/\[/{/^from =/p}' "${config_dir}/couchpotato.ini" | awk '{print $3}')"
-   black_hole_dir="$(sed -nr '/\[blackhole\]/,/\[/{/^directory =/p}' "${config_dir}/couchpotato.ini" | awk '{print $3}')"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Correct owner and group of application files, if required"
    find "${config_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
    find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;

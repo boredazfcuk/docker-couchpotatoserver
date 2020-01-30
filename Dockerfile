@@ -21,10 +21,10 @@ echo "$(date '+%d/%m/%Y - %H:%M:%S') | Install Python dependencies" && \
    cd "${app_base_dir}" && \
    pip install --upgrade pip && \
    pip install ${python_dependencies} && \
-echo "$(date '+%d/%m/%Y - %H:%M:%S') | Download CouchPotato pull request patches" && \
-   wget --quiet https://github.com/CouchPotato/CouchPotatoServer/pull/7306.diff --output-document "${patch_dir}/couchpotatoserver_pr7306.diff" && \
-echo "$(date '+%d/%m/%Y - %H:%M:%S') | Apply fix for utf8 file names" && \
-   /usr/libexec/git-core/git-apply "${patch_dir}/couchpotatoserver_pr7306.diff" && \
+#echo "$(date '+%d/%m/%Y - %H:%M:%S') | Download CouchPotato pull request patches" && \
+#   wget --quiet https://github.com/CouchPotato/CouchPotatoServer/pull/7306.diff --output-document "${patch_dir}/couchpotatoserver_pr7306.diff" && \
+#echo "$(date '+%d/%m/%Y - %H:%M:%S') | Apply fix for utf8 file names" && \
+#   /usr/libexec/git-core/git-apply "${patch_dir}/couchpotatoserver_pr7306.diff" && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Clean up" && \
       apk del --purge --no-progress build-deps
 

@@ -4,7 +4,7 @@
 Initialise(){
    lan_ip="$(hostname -i)"
    echo -e "\n"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Starting CouchPotato/CouchPotatoServer container *****"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Configuring CouchPotato container launch environment *****"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${stack_user:=stackman}:${user_id:=1000}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${couchpotato_group:=couchpotato}:${couchpotato_group_id:=1000}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Password: ${stack_password:=Skibidibbydibyodadubdub}"
@@ -53,7 +53,7 @@ FirstRun(){
    find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    su -m "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --daemon --pid_file /tmp/couchpotato.pid'
    sleep 15
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Reload CouchPotato/CouchPotatoServer *****"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Reload CouchPotato launch environment *****"
    pkill python
    sleep 5
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Add host setting"
@@ -234,9 +234,14 @@ SetOwnerAndGroup(){
    fi
 }
 
-LaunchCouchPotato(){
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Starting CouchPotato as ${stack_user}"
-   su -m "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --console_log'
+LaunchCouchPotato (){
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Configuration of CouchPotato container launch environment complete *****"
+   if [ -z "${1}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Starting CouchPotato as ${stack_user}"
+      exec "$(which su)" -m "${stack_user}" -c "$(which python) ${app_base_dir}/CouchPotato.py --data_dir ${config_dir} --config_file ${config_dir}/couchpotato.ini --console_log"
+   else
+      exec "$@"
+   fi
 }
 
 ##### Script #####

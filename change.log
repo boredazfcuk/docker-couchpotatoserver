@@ -1,0 +1,5 @@
+20200209
+
+ - Change: Now using ENTRYPOINT laucnh method instead of CMD
+ - Change: Using exec to launch CouchPotato so it inherits PID of parent
+ - Change: Using the apk version of wget as the busybox version doesn't seem to close SSL connections correctly when healthcheck run... Results in defunct SSL connections

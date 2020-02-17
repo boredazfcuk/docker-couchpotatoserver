@@ -1,9 +1,9 @@
 #!/bin/ash
-exit_code=0
-exit_code="$(wget --quiet --tries=1 --spider --no-check-certificate "https://${HOSTNAME}:5050/couchpotato/index.html" | echo ${?})"
-if [ "${exit_code}" != 0 ]; then
-   echo "WebUI not responding: Error ${exit_code}"
+
+if [ "$(nc -z "$(hostname -i)" 5050; echo "${?}")" -ne 0 ]; then
+   echo "CouchPotato WebUI not responding on port 5050"
    exit 1
 fi
-echo "WebUI Available"
+
+echo "CouchPotato WebUI responding on port 5050"
 exit 0

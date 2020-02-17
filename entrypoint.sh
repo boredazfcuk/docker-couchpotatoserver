@@ -51,7 +51,7 @@ FirstRun(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    First run detected - create default config"
    find "${config_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
    find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
-   su -m "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --daemon --pid_file /tmp/couchpotato.pid'
+   su -p "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --daemon --pid_file /tmp/couchpotato.pid'
    sleep 15
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Reload CouchPotato launch environment *****"
    pkill python
@@ -128,9 +128,9 @@ Configure(){
       -e "/^\[renamer\]/,/^\[.*\]/ s%to =.*%to = ${video_dirs//,*/}%" \
       "${config_dir}/couchpotato.ini"
    if [ "${couchpotato_enabled}" ]; then
-      sed -i "s%^url_base = $%url_base = /couchpotato%" "${config_dir}/couchpotato.ini"
+      sed -i "s%^url_base = .*%url_base = /couchpotato%" "${config_dir}/couchpotato.ini"
    fi
-   if [ "${kodi_headless_group_id}" ]; then
+   if [ "${kodi_enabled}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Kodi-headless enabled"
       sed -i \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
@@ -238,7 +238,7 @@ LaunchCouchPotato (){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Configuration of CouchPotato container launch environment complete *****"
    if [ -z "${1}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Starting CouchPotato as ${stack_user}"
-      exec "$(which su)" -m "${stack_user}" -c "$(which python) ${app_base_dir}/CouchPotato.py --data_dir ${config_dir} --config_file ${config_dir}/couchpotato.ini --console_log"
+      exec "$(which su)" -p "${stack_user}" -c "$(which python) ${app_base_dir}/CouchPotato.py --data_dir ${config_dir} --config_file ${config_dir}/couchpotato.ini --console_log"
    else
       exec "$@"
    fi

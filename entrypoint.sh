@@ -130,6 +130,9 @@ Configure(){
    if [ "${couchpotato_enabled}" ]; then
       sed -i "s%^url_base = .*%url_base = /couchpotato%" "${config_dir}/couchpotato.ini"
    fi
+}
+
+Kodi(){
    if [ "${kodi_enabled}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Kodi-headless enabled"
       sed -i \
@@ -154,6 +157,9 @@ Configure(){
          -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_banner_name =.*/meta_banner_name = %s-banner.jpg/" \
          "${config_dir}/couchpotato.ini"
    fi
+}
+
+SABnzbd(){
    if [ "${sabnzbd_enabled}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Sabnzbd enabled"
       sed -i \
@@ -164,6 +170,9 @@ Configure(){
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%api_key =.*%api_key = ${global_api_key}%" \
          "${config_dir}/couchpotato.ini"
    fi
+}
+
+Deluge(){
    if [ "${deluge_enabled}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Deluge enabled"
       sed -i \
@@ -179,6 +188,9 @@ Configure(){
          -e "/^\[deluge\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
+}
+
+Prowl(){
    if [ "${prowl_api_key}" ] && [ "${couchpotato_notifications}" = "Prowl" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Prowl notifications enabled"
       sed -i \
@@ -191,6 +203,9 @@ Configure(){
          -e "/^\[prowl\]/,/^\[.*\]/ s%^enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
+}
+
+Telegram(){
    if [ "${telegram_token}" ] && [ "${couchpotato_notifications}" = "Telegram" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Telegram notifications enabled"
       sed -i \
@@ -203,6 +218,9 @@ Configure(){
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = False%" \
          "${config_dir}/couchpotato.ini"
    fi
+}
+
+OMGWTFNZBs(){
    if [ "${omgwtfnzbs_user}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configuring OMGWTFNZBs search provider"
       sed -i \
@@ -251,5 +269,11 @@ CreateUser
 if [ ! -f "${config_dir}/couchpotato.ini" ]; then FirstRun; fi
 EnableSSL
 Configure
+Kodi
+SABnzbd
+Deluge
+Prowl
+Telegram
+OMBWTFNZBs
 SetOwnerAndGroup
 LaunchCouchPotato

@@ -1,7 +1,7 @@
 #!/bin/ash
 
 ##### Functions #####
-Initialise(){
+InitialiseVariables(){
    lan_ip="$(hostname -i)"
    echo -e "\n"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Configuring CouchPotato container launch environment *****"
@@ -12,7 +12,10 @@ Initialise(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato configuration directory: ${config_dir}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    LAN IP Address: ${lan_ip}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Video location(s): ${video_dirs:=/storage/videos/}"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Download directory: ${tv_complete_dir:=/storage/downloads/complete/movie/}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Download complete directory: ${movie_complete_dir:=/storage/downloads/complete/movie/}"
+   if [ "${deluge_enabled}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Deluge incoming download directory: ${deluge_incoming_dir:=/storage/downloads/incoming/deluge/}"
+   fi
    if [ "${couchpotato_notifications}" ]; then
       if [ "${couchpotato_notifications}" = "Prowl" ] && [ "${prowl_api_key}" ]; then
          echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure ${couchpotato_notifications} notifications"
@@ -48,44 +51,46 @@ CreateUser(){
 }
 
 FirstRun(){
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    First run detected - create default config"
-   find "${config_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-   find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
-   su -p "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --daemon --pid_file /tmp/couchpotato.pid'
-   sleep 15
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Reload CouchPotato launch environment *****"
-   pkill python
-   sleep 5
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Add host setting"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Set unrar path: /usr/bin/unrar"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure library refresh interval to 12hr"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Disable usenet and torrent searchers"
-   sed -i \
-      -e "/^\[core]/ ahost = " \
-      -e "/^\[core\]/,/^\[.*\]/ s%^dark_theme =.*%dark_theme = True%" \
-      -e "/^\[core\]/,/^\[.*\]/ s%^data_dir =.*%data_dir = ${config_dir}%" \
-      -e "/^\[core\]/,/^\[.*\]/ s%^username =.*%username = ${stack_user}%" \
-      -e "/^\[core\]/,/^\[.*\]/ s%^password =.*%password = $(echo -n "${stack_password}" | md5sum | awk '{print $1}')%" \
-      -e "/^\[manage\]/,/^\[.*\]/ s%^enabled = False%enabled = True%" \
-      -e "/^\[manage\]/,/^\[.*\]/ s%^library_refresh_interval = 0%library_refresh_interval = 12%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar =.*%unrar = True%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar_path =.*%unrar_path = /usr/bin/unrar%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^run_every =.*%run_every = 0%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^next_on_failed =.*%next_on_failed = True%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^cleanup =.*%cleanup = True%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^check_space =.*%check_space = True%" \
-      -e "/^\[renamer\]/,/^\[.*\]/ s%^file_action =.*%file_action = symlink_reversed%" \
-      -e '/^\[renamer\]/,/^\[.*\]/ s%^folder_name =.*%folder_name = <thename> (<year>)%' \
-      -e '/^\[renamer\]/,/^\[.*\]/ s%^file_name =.*%file_name = <thename><cd>.<ext>%' \
-      -e "/^\[newznab\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
-      -e "/^\[moviesearcher\]/,/^\[.*\]/ s%^cron_hour =.*%cron_hour = */2%" \
-      -e "/^\[moviesearcher\]/,/^\[.*\]/ s%^run_on_launch =.*%run_on_launch = True%" \
-      -e "/^\[searcher\]/,/^\[.*\]/ s%^preferred_method =.*%preferred_method = nzb%" \
-      -e "/^\[suggestion\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
-      -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
-      "${config_dir}/couchpotato.ini"
-   sleep 1
+   if [ ! -f "${config_dir}/couchpotato.ini" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    First run detected - create default config"
+      find "${config_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
+      find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
+      su -p "${stack_user}" -c 'python '"${app_base_dir}/CouchPotato.py"' --data_dir '"${config_dir}"' --config_file '"${config_dir}/couchpotato.ini"' --daemon --pid_file /tmp/couchpotato.pid'
+      sleep 15
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Reload CouchPotato launch environment *****"
+      pkill python
+      sleep 5
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Add host setting"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Set unrar path: /usr/bin/unrar"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure library refresh interval to 12hr"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Disable usenet and torrent searchers"
+      sed -i \
+         -e "/^\[core]/ ahost = " \
+         -e "/^\[core\]/,/^\[.*\]/ s%^dark_theme =.*%dark_theme = True%" \
+         -e "/^\[core\]/,/^\[.*\]/ s%^data_dir =.*%data_dir = ${config_dir}%" \
+         -e "/^\[core\]/,/^\[.*\]/ s%^username =.*%username = ${stack_user}%" \
+         -e "/^\[core\]/,/^\[.*\]/ s%^password =.*%password = $(echo -n "${stack_password}" | md5sum | awk '{print $1}')%" \
+         -e "/^\[manage\]/,/^\[.*\]/ s%^enabled = False%enabled = True%" \
+         -e "/^\[manage\]/,/^\[.*\]/ s%^library_refresh_interval = 0%library_refresh_interval = 12%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar =.*%unrar = True%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^unrar_path =.*%unrar_path = /usr/bin/unrar%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^run_every =.*%run_every = 0%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^next_on_failed =.*%next_on_failed = True%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^cleanup =.*%cleanup = True%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^check_space =.*%check_space = True%" \
+         -e "/^\[renamer\]/,/^\[.*\]/ s%^file_action =.*%file_action = symlink_reversed%" \
+         -e '/^\[renamer\]/,/^\[.*\]/ s%^folder_name =.*%folder_name = <thename> (<year>)%' \
+         -e '/^\[renamer\]/,/^\[.*\]/ s%^file_name =.*%file_name = <thename><cd>.<ext>%' \
+         -e "/^\[newznab\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
+         -e "/^\[moviesearcher\]/,/^\[.*\]/ s%^cron_hour =.*%cron_hour = */2%" \
+         -e "/^\[moviesearcher\]/,/^\[.*\]/ s%^run_on_launch =.*%run_on_launch = True%" \
+         -e "/^\[searcher\]/,/^\[.*\]/ s%^preferred_method =.*%preferred_method = nzb%" \
+         -e "/^\[suggestion\]/,/^\[.*\]/ s%^enabled =.*$%enabled = False%" \
+         -e "/^\[blackhole\]/,/^\[.*\]/ s%enabled =.*%enabled = False%" \
+         "${config_dir}/couchpotato.ini"
+      sleep 2
+   fi
 }
 
 EnableSSL(){
@@ -181,6 +186,8 @@ Deluge(){
          -e "/^\[deluge\]/,/^\[.*\]/ s%label =.*%label = movie%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%host =.*%host = localhost:58846%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%password =.*%password = ${stack_password}%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%directory =.*%directory = ${deluge_incoming_dir}%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%completed_directory =.*%completed_directory = ${movie_complete_dir}%" \
          -e "/^\[magnetdl\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          "${config_dir}/couchpotato.ini"
    else
@@ -242,13 +249,11 @@ SetOwnerAndGroup(){
    find "${config_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    find "${app_base_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
    find "${app_base_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
+   find "${movie_complete_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
+   find "${movie_complete_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    if [ "${renamer_source_dir}" ]; then
       find "${renamer_source_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
       find "${renamer_source_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
-   fi
-   if [ "${black_hole_dir}" ]; then
-      find "${black_hole_dir}" ! -user "${stack_user}" -exec chown "${stack_user}" {} \;
-      find "${black_hole_dir}" ! -group "${couchpotato_group}" -exec chgrp "${couchpotato_group}" {} \;
    fi
 }
 
@@ -256,17 +261,17 @@ LaunchCouchPotato (){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Configuration of CouchPotato container launch environment complete *****"
    if [ -z "${1}" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Starting CouchPotato as ${stack_user}"
-      exec "$(which su)" -p "${stack_user}" -c "$(which python) ${app_base_dir}/CouchPotato.py --data_dir ${config_dir} --config_file ${config_dir}/couchpotato.ini --console_log"
+      exec "$(which su)" -p "${stack_user}" -c "$(which python) ${app_base_dir}/CouchPotato.py --data_dir ${config_dir} --config_file ${config_dir}/couchpotato.ini --console_log $(cat "${config_dir}/enable_debugging")"
    else
       exec "$@"
    fi
 }
 
 ##### Script #####
-Initialise
+InitialiseVariables
 CreateGroup
 CreateUser
-if [ ! -f "${config_dir}/couchpotato.ini" ]; then FirstRun; fi
+FirstRun
 EnableSSL
 Configure
 Kodi
@@ -274,6 +279,6 @@ SABnzbd
 Deluge
 Prowl
 Telegram
-OMBWTFNZBs
+OMGWTFNZBs
 SetOwnerAndGroup
 LaunchCouchPotato

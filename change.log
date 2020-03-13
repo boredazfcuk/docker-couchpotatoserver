@@ -1,3 +1,7 @@
+20200313
+
+ - Change: Log now displays OS version
+
 20200301
 
  - Change: Deluge download directories now set if Deluge is enabled. This is to override the default, if they need to be changed in Deluge for some reason. Also, so it's easier to know where they're going if you're looking at couchpotato.ini

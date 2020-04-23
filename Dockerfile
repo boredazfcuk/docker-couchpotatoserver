@@ -3,7 +3,7 @@ MAINTAINER boredazfcuk
 ARG app_repo="CouchPotato/CouchPotatoServer"
 ARG build_dependencies="gcc python2-dev py2-pip musl-dev libffi-dev openssl-dev"
 ARG pip_dependencies="pyopenssl lxml"
-ARG app_dependencies="git python2 libxml2-dev libxslt-dev tzdata openssl unrar wget"
+ARG app_dependencies="git ca-certificates python2 libxml2-dev libxslt-dev tzdata openssl unrar wget"
 ENV app_base_dir="/CouchPotatoServer" \
    config_dir="/config"
 

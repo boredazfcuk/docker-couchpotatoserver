@@ -94,26 +94,6 @@ FirstRun(){
    fi
 }
 
-EnableSSL(){
-   if [ ! -d "${config_dir}/https" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Initialise HTTPS"
-      mkdir -p "${config_dir}/https"
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate server key"
-      openssl ecparam -genkey -name secp384r1 -out "${config_dir}/https/couchpotato.key"
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate certificate request"
-      openssl req -new -subj "/C=NA/ST=Global/L=Global/O=CouchPotato/OU=CouchPotato/CN=CouchPotato/" -key "${config_dir}/https/couchpotato.key" -out "${config_dir}/https/couchpotato.csr"
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Generate certificate"
-      openssl x509 -req -sha256 -days 3650 -in "${config_dir}/https/couchpotato.csr" -signkey "${config_dir}/https/couchpotato.key" -out "${config_dir}/https/couchpotato.crt" >/dev/null 2>&1
-   fi
-   if [ -f "${config_dir}/https/couchpotato.key" ] && [ -f "${config_dir}/https/couchpotato.crt" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure CouchPotato to use HTTPS"
-      sed -i \
-         -e "/^\[core\]/,/^\[.*\]/ s%ssl_key =.*%ssl_key = ${config_dir}/https/couchpotato.key%" \
-         -e "/^\[core\]/,/^\[.*\]/ s%ssl_cert =.*%ssl_cert = ${config_dir}/https/couchpotato.crt%" \
-         "${config_dir}/couchpotato.ini"
-   fi
-}
-
 Configure(){
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Disable browser launch on startup"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Disable startup wizard"
@@ -273,7 +253,6 @@ InitialiseVariables
 CreateGroup
 CreateUser
 FirstRun
-EnableSSL
 Configure
 Kodi
 SABnzbd

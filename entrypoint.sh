@@ -178,6 +178,34 @@ Deluge(){
    fi
 }
 
+Jellyfin(){
+   if [ "${jellyfin_enabled}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Enable Jellyfin"
+      if [ "$(grep -c "\[emby\]" "${config_dir}/couchpotato.ini")" -eq 0 ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Add Emby (Jellyfin compatible) configuration section"
+         {
+            echo
+            echo "[emby]"
+            echo "host = http://jellyfin:8096/jellyfin"
+            echo "apikey = ${global_api_key}"
+            echo "enabled = 1"
+         } >> "${config_dir}/couchpotato.ini"
+      else
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Configure Emby (Jellyfin compatible) host"
+         sed -i \
+            -e "/^\[emby\]/,/^\[.*\]/ s%host =.*%host = http://jellyfin:8096/jellyfin%" \
+            -e "/^\[emby\]/,/^\[.*\]/ s%apikey =.*%apikey = ${global_api_key}%" \
+            -e "/^\[emby\]/,/^\[.*\]/ s%enabled =.*%enabled = 1%" \
+            "${config_dir}/couchpotato.ini"
+      fi
+   else
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Emby (Jellyfin compatible) not enabled"
+      sed -i \
+         -e "/^\[emby\]/,/^\[.*\]/ s%enabled =.*%enabled = 0%" \
+         "${config_dir}/couchpotato.ini"
+   fi
+}
+
 Prowl(){
    if [ "${prowl_api_key}" ] && [ "${couchpotato_notifications}" = "Prowl" ]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Prowl notifications enabled"
@@ -257,6 +285,7 @@ Configure
 Kodi
 SABnzbd
 Deluge
+Jellyfin
 Prowl
 Telegram
 OMGWTFNZBs

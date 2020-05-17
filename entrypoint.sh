@@ -151,7 +151,7 @@ SABnzbd(){
       sed -i \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%category =.*%category = movie%" \
-         -e "/^\[sabnzbd\]/,/^\[.*\]/ s%ssl =.*%ssl = True%" \
+         -e "/^\[sabnzbd\]/,/^\[.*\]/ s%ssl =.*%ssl = False%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%host =.*%host = sabnzbd:9090%" \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%api_key =.*%api_key = ${global_api_key}%" \
          "${config_dir}/couchpotato.ini"

@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.11
 MAINTAINER boredazfcuk
 ARG app_repo="CouchPotato/CouchPotatoServer"
 ARG build_dependencies="gcc python2-dev py2-pip musl-dev libffi-dev openssl-dev"

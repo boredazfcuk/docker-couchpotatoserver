@@ -31,23 +31,60 @@ InitialiseVariables(){
    fi
 }
 
+CheckOpenVPNPIA(){
+   if [ "${openvpnpia_enabled}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    OpenVPNPIA is enabled. Wait for VPN to connect"
+      vpn_adapter="$(ip addr | grep tun.$ | awk '{print $7}')"
+      while [ -z "${vpn_adapter}" ]; do
+         vpn_adapter="$(ip addr | grep tun.$ | awk '{print $7}')"
+         sleep 5
+      done
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    VPN adapter available: ${vpn_adapter}"
+   else
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    OpenVPNPIA is not enabled"
+   fi
+}
+
 CreateGroup(){
-   if [ -z "$(getent group "${couchpotato_group}" | cut -d: -f3)" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Group ID available, creating group"
-      addgroup -g "${couchpotato_group_id}" "${couchpotato_group}"
-   elif [ ! "$(getent group "${couchpotato_group}" | cut -d: -f3)" = "${couchpotato_group_id}" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   Group group_id mismatch - exiting"
-      exit 1
+   if [ "$(grep -c "^${couchpotato_group}:x:${couchpotato_group_id}:" "/etc/group")" -eq 1 ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Group, ${couchpotato_group}:${couchpotato_group_id}, already created"
+   else
+      if [ "$(grep -c "^${couchpotato_group}:" "/etc/group")" -eq 1 ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   Group name, ${couchpotato_group}, already in use - exiting"
+         sleep 120
+         exit 1
+      elif [ "$(grep -c ":x:${couchpotato_group_id}:" "/etc/group")" -eq 1 ]; then
+         if [ "${force_gid}" = "True" ]; then
+            group="$(grep ":x:${couchpotato_group_id}:" /etc/group | awk -F: '{print $1}')"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING: Group id, ${couchpotato_group_id}, already exists - continuing as force_gid variable has been set. Group name to use: ${couchpotato_group}"
+         else
+            echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   Group id, ${couchpotato_group_id}, already in use - exiting"
+            sleep 120
+            exit 1
+         fi
+      else
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Creating group ${couchpotato_group}:${couchpotato_group_id}"
+         addgroup -g "${couchpotato_group_id}" "${couchpotato_group}"
+      fi
    fi
 }
 
 CreateUser(){
-   if [ -z "$(getent passwd "${stack_user}" | cut -d: -f3)" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User ID available, creating user"
-      adduser -s /bin/ash -H -D -G "${couchpotato_group}" -u "${user_id}" "${stack_user}"
-   elif [ ! "$(getent passwd "${stack_user}" | cut -d: -f3)" = "${user_id}" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User ID already in use - exiting"
-      exit 1
+   if [ "$(grep -c "^${stack_user}:x:${user_id}:${couchpotato_group_id}" "/etc/passwd")" -eq 1 ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User, ${stack_user}:${user_id}, already created"
+   else
+      if [ "$(grep -c "^${stack_user}:" "/etc/passwd")" -eq 1 ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User name, ${stack_user}, already in use - exiting"
+         sleep 120
+         exit 1
+      elif [ "$(grep -c ":x:${user_id}:$" "/etc/passwd")" -eq 1 ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User id, ${user_id}, already in use - exiting"
+         sleep 120
+         exit 1
+      else
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Creating user ${stack_user}:${user_id}"
+         adduser -s /bin/ash -D -G "${couchpotato_group}" -u "${user_id}" "${stack_user}" -h "/home/${stack_user}"
+      fi
    fi
 }
 
@@ -278,6 +315,7 @@ LaunchCouchPotato (){
 
 ##### Script #####
 InitialiseVariables
+CheckOpenVPNPIA
 CreateGroup
 CreateUser
 FirstRun

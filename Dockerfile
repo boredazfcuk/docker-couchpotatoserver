@@ -1,5 +1,6 @@
 FROM alpine:3.11
 MAINTAINER boredazfcuk
+ARG version="(latest)"
 ARG app_repo="CouchPotato/CouchPotatoServer"
 ARG build_dependencies="gcc python2-dev py2-pip musl-dev libffi-dev openssl-dev"
 ARG pip_dependencies="pyopenssl lxml"
@@ -7,7 +8,7 @@ ARG app_dependencies="git ca-certificates python2 libxml2-dev libxslt-dev tzdata
 ENV app_base_dir="/CouchPotatoServer" \
    config_dir="/config"
 
-RUN echo "$(date '+%d/%m/%Y - %H:%M:%S') | ***** BUILD STARTED *****" && \
+RUN echo "$(date '+%d/%m/%Y - %H:%M:%S') | ***** BUILD STARTED FOR COUCHPOTATOSERVER ${version} *****" && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Create application base directory" && \
    mkdir -p "${app_base_dir}" && \
 echo "$(date '+%d/%m/%Y - %H:%M:%S') | Install build dependencies" && \

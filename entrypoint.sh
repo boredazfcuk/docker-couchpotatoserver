@@ -161,8 +161,8 @@ Kodi(){
       sed -i \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%username =.*%username = kodi%" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s%password =.*%password = ${kodi_password}%" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s%host =.*%host = kodi:8080%" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s%password =.*%password = ${kodi_password:=kodi}%" \
+         -e "/^\[xbmc\]/,/^\[.*\]/ s%host =.*%host = ${kodi_host:=kodi}:${kodi_port:=8080}%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%remote_dir_scan =.*%remote_dir_scan = True%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_disc_art =.*/meta_disc_art = True/" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_disc_art_name =.*/meta_disc_art_name = %s-disc.png/" \

@@ -3,18 +3,21 @@
 ##### Functions #####
 InitialiseVariables(){
    lan_ip="$(hostname -i)"
+   default_gateway="$(ip route | grep "^default" | awk '{print $3}')"
    echo
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    ***** Configuring CouchPotato container launch environment *****"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    $(cat /etc/*-release | grep "PRETTY_NAME" | sed 's/PRETTY_NAME=//g' | sed 's/"//g')"
-   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${stack_user:=stackman}:${user_id:=1000}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local user: ${stack_user:=stackman}:${stack_uid:=1000}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Local group: ${couchpotato_group:=couchpotato}:${couchpotato_group_id:=1000}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Password: ${stack_password:=Skibidibbydibyodadubdub}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Docker host LAN IP subnet: ${host_lan_ip_subnet}"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Default gateway: ${default_gateway}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato application directory: ${app_base_dir}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    CouchPotato configuration directory: ${config_dir}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    LAN IP Address: ${lan_ip}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Video location(s): ${video_dirs:=/storage/videos/}"
    echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Download complete directory: ${movie_complete_dir:=/storage/downloads/complete/movie/}"
-   if [ "${deluge_enabled}" ]; then
+   if getent hosts deluge >/dev/null 2>&1; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Deluge incoming download directory: ${deluge_incoming_dir:=/storage/downloads/incoming/deluge/}"
    fi
    if [ "${couchpotato_notifications}" ]; then
@@ -31,9 +34,9 @@ InitialiseVariables(){
    fi
 }
 
-CheckOpenVPNPIA(){
-   if [ "${openvpnpia_enabled}" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    OpenVPNPIA is enabled. Wait for VPN to connect"
+CheckPIANextGen(){
+   if [ "${pianextgen_enabled}" ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    PIANextGen is enabled. Wait for VPN to connect"
       vpn_adapter="$(ip addr | grep tun.$ | awk '{print $7}')"
       while [ -z "${vpn_adapter}" ]; do
          vpn_adapter="$(ip addr | grep tun.$ | awk '{print $7}')"
@@ -41,7 +44,14 @@ CheckOpenVPNPIA(){
       done
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    VPN adapter available: ${vpn_adapter}"
    else
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    OpenVPNPIA is not enabled"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    PIANextGen shared network stack is not enabled, configure container forwarding mode mode"
+      pianextgen_host="$(getent hosts pianextgen | awk '{print $1}')"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    PIANextGen container IP address: ${pianextgen_host}"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Create default route via ${pianextgen_host}"
+      ip route del default 
+      ip route add default via "${pianextgen_host}"
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Create additional route to Docker host network ${host_lan_ip_subnet} via ${default_gateway}"
+      ip route add "${host_lan_ip_subnet}" via "${default_gateway}"
    fi
 }
 
@@ -70,20 +80,20 @@ CreateGroup(){
 }
 
 CreateUser(){
-   if [ "$(grep -c "^${stack_user}:x:${user_id}:${couchpotato_group_id}" "/etc/passwd")" -eq 1 ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User, ${stack_user}:${user_id}, already created"
+   if [ "$(grep -c "^${stack_user}:x:${stack_uid}:${couchpotato_group_id}" "/etc/passwd")" -eq 1 ]; then
+      echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    User, ${stack_user}:${stack_uid}, already created"
    else
       if [ "$(grep -c "^${stack_user}:" "/etc/passwd")" -eq 1 ]; then
          echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User name, ${stack_user}, already in use - exiting"
          sleep 120
          exit 1
-      elif [ "$(grep -c ":x:${user_id}:$" "/etc/passwd")" -eq 1 ]; then
-         echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User id, ${user_id}, already in use - exiting"
+      elif [ "$(grep -c ":x:${stack_uid}:$" "/etc/passwd")" -eq 1 ]; then
+         echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR:   User id, ${stack_uid}, already in use - exiting"
          sleep 120
          exit 1
       else
-         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Creating user ${stack_user}:${user_id}"
-         adduser -s /bin/ash -D -G "${couchpotato_group}" -u "${user_id}" "${stack_user}" -h "/home/${stack_user}"
+         echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Creating user ${stack_user}:${stack_uid}"
+         adduser -s /bin/ash -D -G "${couchpotato_group}" -u "${stack_uid}" "${stack_user}" -h "/home/${stack_user}"
       fi
    fi
 }
@@ -150,13 +160,13 @@ Configure(){
       -e "/^\[renamer\]/,/^\[.*\]/ s%from =.*%from = ${movie_complete_dir}%" \
       -e "/^\[renamer\]/,/^\[.*\]/ s%to =.*%to = ${video_dirs//,*/}%" \
       "${config_dir}/couchpotato.ini"
-   if [ "${couchpotato_enabled}" ]; then
+   if getent hosts couchpotato >/dev/null 2>&1; then
       sed -i "s%^url_base = .*%url_base = /couchpotato%" "${config_dir}/couchpotato.ini"
    fi
 }
 
 Kodi(){
-   if [ "${kodi_enabled}" ]; then
+   if getent hosts kodi >/dev/null 2>&1; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Kodi-headless enabled"
       sed -i \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
@@ -164,26 +174,12 @@ Kodi(){
          -e "/^\[xbmc\]/,/^\[.*\]/ s%password =.*%password = ${kodi_password:=kodi}%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%host =.*%host = ${kodi_host:=kodi}:${kodi_port:=8080}%" \
          -e "/^\[xbmc\]/,/^\[.*\]/ s%remote_dir_scan =.*%remote_dir_scan = True%" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_disc_art =.*/meta_disc_art = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_disc_art_name =.*/meta_disc_art_name = %s-disc.png/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_thumbnail =.*/meta_thumbnail = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_thumbnail_name =.*/meta_thumbnail_name = %s-thumb.jpg/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_fanart =.*/meta_fanart = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_fanart_name =.*/meta_fanart_name = %s-fanart.jpg/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_logo =.*/meta_logo = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_logo_name =.*/meta_logo_name = %s-logo.jpg/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_clear_art =.*/meta_clear_art = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_clear_art_name =.*/meta_clear_art_name = %s-clearart.png/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_landscape =.*/meta_landscape = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_landscape_name =.*/meta_landscape_name = %s-landscape.jpg/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_banner =.*/meta_banner = True/" \
-         -e "/^\[xbmc\]/,/^\[.*\]/ s/meta_banner_name =.*/meta_banner_name = %s-banner.jpg/" \
          "${config_dir}/couchpotato.ini"
    fi
 }
 
 SABnzbd(){
-   if [ "${sabnzbd_enabled}" ]; then
+   if getent hosts sabnzbd >/dev/null 2>&1; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Sabnzbd enabled"
       sed -i \
          -e "/^\[sabnzbd\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
@@ -196,13 +192,13 @@ SABnzbd(){
 }
 
 Deluge(){
-   if [ "${deluge_enabled}" ]; then
+   if getent hosts deluge >/dev/null 2>&1; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Deluge enabled"
       sed -i \
          -e "/^\[deluge\]/,/^\[.*\]/ s%username =.*%username = ${stack_user}%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%enabled =.*%enabled = True%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%label =.*%label = movie%" \
-         -e "/^\[deluge\]/,/^\[.*\]/ s%host =.*%host = localhost:58846%" \
+         -e "/^\[deluge\]/,/^\[.*\]/ s%host =.*%host = deluge:58846%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%password =.*%password = ${stack_password}%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%directory =.*%directory = ${deluge_incoming_dir}%" \
          -e "/^\[deluge\]/,/^\[.*\]/ s%completed_directory =.*%completed_directory = ${movie_complete_dir}%" \
@@ -216,7 +212,7 @@ Deluge(){
 }
 
 Jellyfin(){
-   if [ "${jellyfin_enabled}" ]; then
+   if getent hosts jellyfin >/dev/null 2>&1; then
       echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Enable Jellyfin"
       if [ "$(grep -c "\[emby\]" "${config_dir}/couchpotato.ini")" -eq 0 ]; then
          echo "$(date '+%Y-%m-%d %H:%M:%S') INFO:    Add Emby (Jellyfin compatible) configuration section"
@@ -264,7 +260,7 @@ Telegram(){
       sed -i \
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^enabled =.*%enabled = True%" \
          -e "/^\[telegrambot\]/,/^\[.*\]/ s%^bot_token =.*%bot_token = ${telegram_token}%" \
-         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^receiver_user_id =.*%receiver_user_id = ${telegram_chat_id=}%" \
+         -e "/^\[telegrambot\]/,/^\[.*\]/ s%^receiver_stack_uid =.*%receiver_stack_uid = ${telegram_chat_id=}%" \
          "${config_dir}/couchpotato.ini"
    else
       sed -i \
@@ -315,7 +311,7 @@ LaunchCouchPotato (){
 
 ##### Script #####
 InitialiseVariables
-CheckOpenVPNPIA
+CheckPIANextGen
 CreateGroup
 CreateUser
 FirstRun

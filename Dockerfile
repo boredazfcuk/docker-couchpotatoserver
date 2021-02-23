@@ -1,7 +1,7 @@
 FROM alpine:3.11
 MAINTAINER boredazfcuk
 
-ARG version="(latest)"
+ARG version="2021-02-04 Commit 7260c12"
 ARG app_repo="CouchPotato/CouchPotatoServer"
 ARG build_dependencies="gcc python2-dev py2-pip musl-dev libffi-dev openssl-dev"
 ARG pip_dependencies="pyopenssl lxml"
